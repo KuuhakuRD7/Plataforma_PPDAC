@@ -1,0 +1,14 @@
+io
+re
+streamlit
+pandas
+numpy
+openpyxl
+odfpy
+xlsxwriter
+shutil
+zipfile
+pathlib
+matplotlib
+plotly
+seaborn
