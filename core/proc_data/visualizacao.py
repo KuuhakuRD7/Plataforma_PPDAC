@@ -135,7 +135,7 @@ def grafico_pizza(
     return fig
 
 
-def grafico_scatter(
+def grafico_dispersao(
     df,
     coluna_x,
     coluna_y,
