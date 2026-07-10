@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.python-version
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Arquivos temporários
+*.log
+*.tmp
+*.bak
+
+# Dados locais 
+uploads/
+temp/
