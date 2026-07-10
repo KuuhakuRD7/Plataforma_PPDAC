@@ -89,3 +89,13 @@ def agregar_dados(
         resultado = resultado.head(top_n)
 
     return resultado
+
+
+def juncao(
+    df,
+    df2,
+    left_keys,
+    right_keys,
+    how
+):
+    return df.merge(df2, how=how, left_on=left_keys, right_on=right_keys)

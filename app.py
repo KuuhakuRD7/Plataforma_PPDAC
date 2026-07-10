@@ -136,6 +136,9 @@ with aba_Carregamento:
         type=["csv", "xlsx", "ods", "zip"],
         accept_multiple_files=True
     )
+
+    caminhos = []
+
     if arquivos:
         for arquivo in arquivos:
             pasta_destino = UPLOAD_DIR / Path(arquivo.name).stem
@@ -143,7 +146,15 @@ with aba_Carregamento:
             caminho_arquivo = pasta_destino / arquivo.name
             with open(caminho_arquivo, "wb") as f:
                 f.write(arquivo.getbuffer())
-            exibir_obtencao(caminho_arquivo)
+            caminhos.append(caminho_arquivo)
+
+        if caminhos:
+            arquivo_escolhido = st.selectbox(
+                "Arquivo",
+                caminhos,
+                format_func=lambda x: x.name)
+            exibir_obtencao(arquivo_escolhido)
+
 
 with aba_Exploracao:
     st.title("Exploração")
