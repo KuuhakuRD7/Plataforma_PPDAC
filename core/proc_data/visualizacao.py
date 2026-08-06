@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import seaborn as sns
 
-from core.proc_data.analise import agregar_dados
+from core.proc_data.exploracao import agregar_dados
 
 sns.set_style('whitegrid')
 TEMPLATE = 'plotly_white'

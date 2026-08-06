@@ -10,12 +10,6 @@ def exibir_criacao():
 
     st.header("Criação de Dataset")
 
-    if "estrutura" not in st.session_state:
-        st.session_state.estrutura = {}
-
-    if "df_editor" not in st.session_state:
-        st.session_state.df_editor = None
-
     nome_dataset = st.text_input(
         "Nome do Dataset",
         placeholder="meu_dataset"
@@ -130,7 +124,34 @@ def exibir_criacao():
         exploracao_base(df_editado)
 
 
-def exibir_obtencao(arquivo):
+def exibir_carregamento():
+    arquivos = st.file_uploader(
+        "Selecione arquivos",
+        type=["csv", "xlsx", "ods", "zip"],
+        accept_multiple_files=True
+    )
+
+    caminhos = []
+
+    if arquivos:
+        for arquivo in arquivos:
+            pasta_destino = UPLOAD_DIR / Path(arquivo.name).stem
+            pasta_destino.mkdir(parents=True, exist_ok=True)
+            caminho_arquivo = pasta_destino / arquivo.name
+            with open(caminho_arquivo, "wb") as f:
+                f.write(arquivo.getbuffer())
+            caminhos.append(caminho_arquivo)
+
+        if caminhos:
+            arquivo_escolhido = st.selectbox(
+                "Arquivo",
+                caminhos,
+                format_func=lambda x: x.name)
+            carregar_arquivo(arquivo_escolhido)
+
+
+def carregar_arquivo(arquivo):
+
     datasets = {}
     temp = None
     col1, col2, col3 = st.columns(3)

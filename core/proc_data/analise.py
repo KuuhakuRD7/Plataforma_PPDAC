@@ -1,12 +1,21 @@
 import pandas as pd
 
 
+def juncao(
+    df,
+    df2,
+    left_keys,
+    right_keys,
+    how
+):
+    return df.merge(df2, how=how, left_on=left_keys, right_on=right_keys)
+
+
 def filtrar_dados(df, **filtros):
 
     dados = df.copy()
 
     for coluna, valor in filtros.items():
-
         if coluna not in dados.columns:
             continue
 
@@ -29,7 +38,7 @@ def filtrar_dados(df, **filtros):
 
 
 def agregar_dados(
-    df,
+    df: pd.DataFrame,
     eixo_x,
     coluna_alvo=None,
     selections=None,
@@ -62,20 +71,15 @@ def agregar_dados(
 
     grupo = (df.groupby(keys)[coluna_alvo])
 
-    if operacao == "sum":
-        resultado = grupo.sum().reset_index()
+    mapeamento = {
+        "sum": grupo.sum,
+        "count": grupo.count,
+        "mean": grupo.mean,
+        "max": grupo.max,
+        "min": grupo.min,
+    }
 
-    elif operacao == "mean":
-        resultado = grupo.mean().reset_index()
-
-    elif operacao == "count":
-        resultado = grupo.count().reset_index()
-
-    elif operacao == "max":
-        resultado = grupo.max().reset_index()
-
-    elif operacao == "min":
-        resultado = grupo.min().reset_index()
+    resultado = mapeamento[operacao]().reset_index()
 
     # Ordenação
     if ordenar and coluna_alvo:
@@ -89,13 +93,3 @@ def agregar_dados(
         resultado = resultado.head(top_n)
 
     return resultado
-
-
-def juncao(
-    df,
-    df2,
-    left_keys,
-    right_keys,
-    how
-):
-    return df.merge(df2, how=how, left_on=left_keys, right_on=right_keys)
