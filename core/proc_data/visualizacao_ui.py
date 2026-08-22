@@ -1,53 +1,69 @@
+from datetime import datetime
+
 import streamlit as st
-from core.proc_data.visualizacao import *
-from wiki_data.wikis_ui import carregar_markdown
+import plotly.graph_objects as go
+
+from core.model.dataset import Dataset, DatasetHistorico, DatasetFiguras
+from core.proc_data.visualizacao import Visualizador as vis
+from wiki_data.tutor_ui import TutorUI
 
 
-def exibir_visualizacao(nome, df):
-    df_temp = df.copy()
-    st.header("Visualizacao dos Dados")
-    with st.expander("Dicas Sobre Gráficos"):
-        dicas = carregar_markdown("./wiki_data/dicas_graficos.md")
-        st.markdown(dicas)
-    tipos_graficos = [
-        "barra",
-        "linha",
-        "area",
-        "pizza",
-        "radar",
-        "cascata",
-        "funil",
-        "caixa",
-        "dispersao",
-        "bolha",
-        "mosaic",
-        "sankey"
-    ]
+class VisualizadorUI:
 
-    # graficos_comparar = ["barra", "radar", "pizza"]
-    # graficos_mudancas = ["linha", "area", "cascata"]
-    # graficos_organizar = ["mosaic", "funil"]
-    # graficos_relacoes = ["dispersao", "bolha", "caixa", "sankey"]
+    def __init__(self):
+        self.mp_graficos = {
+            "barra": vis.grafico_barra,
+            "linha": vis.grafico_linha,
+            "area": vis.grafico_area,
+            "pizza": vis.grafico_pizza,
+            "funil": vis.grafico_funil,
+            "caixa": vis.grafico_caixas,
+            "dispersao": vis.grafico_dispersao,
+            "bolha": vis.grafico_bolhas,
+            "mosaic": vis.grafico_mosaico,
+            "radar": vis.grafico_radar,
+            "cascata": vis.grafico_cascata,
+            "sankey": vis.grafico_sankey
+        }
 
-    grafico = st.selectbox(
-        "Selecione a visualizacao",
-        options=tipos_graficos,
-        key=f"{nome}_grafico",
-        index=None
-    )
-    numericas = (
-        df_temp
-        .select_dtypes(include="number")
-        .columns
-    )
-    # ---------------------------------
-    if grafico in [
-        "barra",
-        "linha",
-        "area",
-        "mosaic",
-        "sankey"
-    ]:
+    # ----------------------------------------------------------------
+
+    def exibir_visualizacao(self, nome, dataset):
+        df = dataset.df
+        df_temp = df.copy()
+        st.header("Visualizacao dos Dados")
+        with st.expander("Dicas Sobre Gráficos"):
+            ttw = TutorUI()
+            dicas = ttw.carregar_markdown("./wiki_data/dicas_graficos.md")
+            st.markdown(dicas)
+
+        # graficos_comparar = ["barra", "radar", "pizza"]
+        # graficos_mudancas = ["linha", "area", "cascata"]
+        # graficos_organizar = ["mosaic", "funil"]
+        # graficos_relacoes = ["dispersao", "bolha", "caixa", "sankey"]
+
+        grafico = st.selectbox(
+            "Selecione a visualizacao",
+            options=list(self.mp_graficos.keys()),
+            key=f"{nome}_grafico",
+            index=None
+        )
+
+        eixo_x = None
+        eixo_y = None
+        color = None
+        size = None
+
+        stacked = False
+
+        numericas = (
+            df_temp
+            .select_dtypes(include="number")
+            .columns
+        )
+
+        # ---------------------------------
+
         eixo_x = st.selectbox(
             "Selecione eixo x",
             df_temp.columns,
@@ -60,181 +76,78 @@ def exibir_visualizacao(nome, df):
             key=f"eixo_y_{nome}"
         )
 
-    if grafico in [
-        "barra",
-        "pizza",
-        "cascata",
-        "funil",
-        "mosaic"
-    ]:
-        top_n = st.number_input(
-            "Top N",
-            min_value=1,
-            max_value=len(df_temp),
-            value=min(10, len(df_temp)),
-            step=1,
-            key=f"{nome}_top_n"
-        )
-
-    if grafico in [
-        "linha",
-        "area",
-        "dispersao",
-        "bolha",
-        "barra",
-        "cascata",
-        "radar"
-    ]:
-        eixo_z = st.selectbox(
-            "Categoria",
+        color = st.selectbox(
+            "Selecionar Cor",
             df_temp.columns,
             index=None,
-            key=f"{nome}_cat_z"
+            key=f"{nome}_cor"
         )
 
-    if grafico in [
-        "dispersao",
-        "bolha"
-    ]:
-        eixo_x = st.selectbox(
-            "X",
-            numericas,
-            key=f"{nome}_num_x"
-        )
+        if grafico is None:
+            return
+        # size = st.selectbox(
+        #     "Selecionar Tamanho",
+        #     df_temp.columns,
+        #     index=None,
+        #     key=f"{nome}_size"
+        # )
 
-        eixo_y = st.selectbox(
-            "Y",
-            numericas,
-            key=f"{nome}_num_y"
-        )
+        # top_n = st.number_input(
+        #     "Top N",
+        #     min_value=1,
+        #     max_value=len(df_temp),
+        #     value=min(10, len(df_temp)),
+        #     step=1,
+        #     key=f"{nome}_top_n"
+        # )
+        # if grafico in ["barra"]:
+        #     stacked = st.toggle("Stacked")
 
-    if grafico in [
-        "pizza",
-        "cascata",
-        "bolha",
-        "radar",
-        "mosaic",
-        "funil",
-        "caixa"
-    ]:
-        valor = st.selectbox(
-            "Valor",
-            numericas,
-            key=f"{nome}_valor"
-        )
+        # ---------------------------------
 
-    if grafico in ["barra"]:
-        stacked = st.toggle("Stacked")
+        try:
 
-    if grafico in ["radar"]:
-        grupo = st.selectbox(
-            "Grupo",
-            df_temp.columns,
-            key=f"{nome}_radar_grp"
-        )
-    # ---------------------------------
+            fn_grafico = self.mp_graficos[grafico]
+            fig = fn_grafico(df_temp, eixo_x, eixo_y, color)
+            fig = vis._aplicar_layout_padrao(fig)
 
-    fig = go.Figure()
+            st.plotly_chart(fig, width='content')
 
-    if grafico is None:
-        return
+            st.subheader("Salvar Visualização")
+            titulo_figura = st.text_input(
+                "Título/Identificador do Gráfico",
+                value=f"Gráfico de {grafico.title()} - {dataset.nome}",
+                key=f"{nome}_fig_title",
+            )
 
-    if grafico == "barra":
-        fig = grafico_barra(
-            df_temp,
-            eixo_x,
-            eixo_y,
-            eixo_z,
-            top_n,
-            stacked
-        )
+            if st.button("Salvar Figura no Dataset", key=f"{nome}_btn_salvar_fig"):
+                params_usados = {
+                    "eixo_x": eixo_x,
+                    "eixo_y": eixo_y,
+                    "color": color,
+                    # "size": size,
+                    # "top_n": top_n,
+                }
 
-    elif grafico == "linha":
-        fig = grafico_linha(
-            df_temp,
-            eixo_x,
-            eixo_y,
-            eixo_z
-        )
+                nova_figura = DatasetFiguras(
+                    nome=titulo_figura,
+                    tipo=grafico,
+                    figura=fig,
+                    parametros=params_usados
+                )
 
-    elif grafico == "area":
-        fig = grafico_area(
-            df_temp,
-            eixo_x,
-            eixo_y,
-            eixo_z
-        )
+                if not hasattr(dataset, "figuras") or dataset.figuras is None:
+                    dataset.figuras = []
+                dataset.figuras.append(nova_figura)
 
-    elif grafico == "pizza":
-        fig = grafico_pizza(
-            df_temp,
-            eixo_z,
-            valor,
-            top_n
-        )
+                registro_hist = DatasetHistorico(
+                    modulo="VisualizadorUI",
+                    operacao=f"Criação de Gráfico ({grafico})",
+                    parametros=params_usados,
+                )
+                dataset.historico.append(registro_hist)
 
-    elif grafico == "dispersao":
-        fig = grafico_dispersao(
-            df_temp,
-            eixo_x,
-            eixo_y,
-            eixo_z
-        )
-
-    elif grafico == "bolha":
-        fig = grafico_bolhas(
-            df_temp,
-            eixo_x,
-            eixo_y,
-            valor,
-            eixo_z
-        )
-
-    elif grafico == "caixa":
-        fig = grafico_caixas(
-            df_temp,
-            eixo_z,
-            valor
-        )
-
-    elif grafico == "cascata":
-        fig = grafico_cascata(
-            df_temp,
-            eixo_z,
-            valor,
-            top_n
-        )
-
-    elif grafico == "funil":
-        fig = grafico_funil(
-            df_temp,
-            eixo_z,
-            valor,
-            top_n
-        )
-
-    elif grafico == "sankey":
-        fig = grafico_sankey(
-            df_temp,
-            eixo_x,
-            eixo_y
-        )
-
-    elif grafico == "radar":
-        fig = grafico_radar(
-            df_temp,
-            eixo_z,
-            valor,
-            grupo
-        )
-
-    elif grafico == "mosaic":
-        fig = grafico_mosaico(
-            df_temp,
-            eixo_x,
-            eixo_y,
-            valor,
-            top_n
-        )
-
-    st.plotly_chart(fig)
+                st.success(
+                    f"Figura '{titulo_figura}' salva no dataset com sucesso!")
+        except Exception as e:
+            st.error(f"Erro ao gerar o grafico: {str(e)}")

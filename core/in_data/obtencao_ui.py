@@ -1,224 +1,179 @@
+from datetime import datetime
+from pathlib import Path
 import streamlit as st
 import pandas as pd
+import json
 
-from core.in_data.obtencao import *
-from core.out_data.exportacao import *
-from core.proc_data.exploracao_ui import exploracao_base
+from core.model.dataset import Dataset, DatasetHistorico
+from core.in_data.obtencao import Carregador
 
 
-def exibir_criacao():
+class CarregadorUI:
+    """
+        Classe responsavel pela interação da interface
+        com o carregamento de datasets, por meio de:
+        - Carregamento de arquivos
+    """
 
-    st.header("Criação de Dataset")
+    def __init__(self):
+        self.ldr = Carregador()
 
-    nome_dataset = st.text_input(
-        "Nome do Dataset",
-        placeholder="meu_dataset"
-    )
+    # ----------------------------------------------------------------
 
-    num_colunas = st.number_input(
-        "Quantidade de colunas",
-        min_value=1,
-        max_value=20,
-        value=3,
-        step=1
-    )
-
-    num_linhas = st.number_input(
-        "Quantidade de linhas",
-        min_value=1,
-        max_value=1000,
-        value=10,
-        step=1
-    )
-
-    st.divider()
-
-    st.subheader("Estrutura do Dataset")
-
-    tipos = [
-        "string",
-        "int",
-        "float",
-        "bool",
-        "date",
-        "datetime"
-    ]
-
-    with st.form("estrutura_dataset"):
-
-        estrutura = {}
-
-        for i in range(num_colunas):
-
-            col1, col2 = st.columns([2, 1])
-
-            with col1:
-                nome_coluna = st.text_input(
-                    f"Nome coluna {i+1}",
-                    key=f"nome_coluna_{i}"
-                )
-
-            with col2:
-                tipo = st.selectbox(
-                    f"Tipo {i+1}",
-                    tipos,
-                    key=f"tipo_coluna_{i}"
-                )
-
-            if nome_coluna:
-                estrutura[nome_coluna] = tipo
-
-        criar_tabela = st.form_submit_button(
-            "Criar Tabela"
-        )
-
-    if criar_tabela:
-
-        st.session_state.estrutura = estrutura
-
-        dados = {}
-
-        for coluna, tipo in estrutura.items():
-
-            if tipo == "string":
-                dados[coluna] = [""] * num_linhas
-
-            elif tipo == "int":
-                dados[coluna] = [0] * num_linhas
-
-            elif tipo == "float":
-                dados[coluna] = [0.0] * num_linhas
-
-            elif tipo == "bool":
-                dados[coluna] = [False] * num_linhas
-
-            elif tipo == "date":
-                dados[coluna] = [pd.Timestamp.today().date()] * num_linhas
-
-            elif tipo == "datetime":
-                dados[coluna] = [pd.Timestamp.now()] * num_linhas
-
-        st.session_state.df_editor = pd.DataFrame(dados)
-
-    if st.session_state.df_editor is not None:
+    def exibir_carregamento(self):
+        sessao_ant = st.file_uploader(
+            "Carregar Sessão Anterior", type=["json"])
+        if sessao_ant is not None:
+            dados_json = json.load(sessao_ant)
+            dataset_rec = Dataset.from_dict(dados_json)
+            st.session_state["datasets"][dataset_rec.nome] = dataset_rec
+            st.success(f"Instância '{dataset_rec.nome}' carregada")
 
         st.divider()
-
-        st.subheader("Preenchimento dos Dados")
-
-        df_editado = st.data_editor(
-            st.session_state.df_editor,
-            num_rows="fixed",
-            width='stretch',
-            hide_index=True
+        arquivos = st.file_uploader(
+            "Selecione arquivos",
+            type=["csv", "xlsx", "ods", "zip"],
+            accept_multiple_files=True
         )
 
-        if st.button("Gravar"):
-            st.session_state.df_editor = df_editado
-            st.session_state["datasets"][nome_dataset] = df_editado
-            st.success(f"{nome_dataset} gravado com sucesso.")
+        # caminhos = []
 
-        st.divider()
+        if arquivos:
+            for arquivo in arquivos:
+                # pasta_destino = UPLOAD_DIR / Path(arquivo.name).stem
+                # pasta_destino.mkdir(parents=True, exist_ok=True)
+                # caminho_arquivo = pasta_destino / arquivo.name
+                # with open(caminho_arquivo, "wb") as f:
+                #     f.write(arquivo.getbuffer())
+                # caminhos.append(caminho_arquivo)
 
-        st.subheader("Informações")
-        exploracao_base(df_editado)
+                # if caminhos:
+                arquivo_escolhido = st.selectbox(
+                    "Arquivo",
+                    arquivos,  # caminhos
+                    format_func=lambda x: x.name
+                )
+                self._carregar_arquivo(arquivo_escolhido)
 
+    # ----------------------------------------------------------------
+    def _salvar_dataset(
+        self,
+        nome: str,
+        df: pd.DataFrame,
+        caminho: Path,
+        sep: str,
+        encoding: str
+    ) -> Dataset:
 
-def exibir_carregamento():
-    arquivos = st.file_uploader(
-        "Selecione arquivos",
-        type=["csv", "xlsx", "ods", "zip"],
-        accept_multiple_files=True
-    )
+        dataset = Dataset(nome=nome, df=df, origem=str(caminho))
 
-    caminhos = []
+        dataset.metadata.caminho = str(caminho)
+        dataset.metadata.encoding = encoding
+        dataset.metadata.Separador = sep
+        dataset.metadata.criado_em = datetime.now()
+        dataset.metadata.atualizado_em = datetime.now()
+        dataset.metadata.linhas = df.shape[0]
+        dataset.metadata.colunas = df.shape[1]
 
-    if arquivos:
-        for arquivo in arquivos:
-            pasta_destino = UPLOAD_DIR / Path(arquivo.name).stem
-            pasta_destino.mkdir(parents=True, exist_ok=True)
-            caminho_arquivo = pasta_destino / arquivo.name
-            with open(caminho_arquivo, "wb") as f:
-                f.write(arquivo.getbuffer())
-            caminhos.append(caminho_arquivo)
-
-        if caminhos:
-            arquivo_escolhido = st.selectbox(
-                "Arquivo",
-                caminhos,
-                format_func=lambda x: x.name)
-            carregar_arquivo(arquivo_escolhido)
-
-
-def carregar_arquivo(arquivo):
-
-    datasets = {}
-    temp = None
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        tipo = st.radio(
-            "Tipo de carregamento",
-            ["Simples", "Conjunto", "Composto"],
-            # placeholder="Escolha ao menos um",
-            captions=[
-                "Arquivo csv simples",
-                "Arquivo zip com csv's do mesmo dataset",
-                "Arquivo zip com csv's de datasets diferentes"
-            ],
-            key=f"tipo_{arquivo.name}"
-
+        historico_carregamento = DatasetHistorico(
+            modulo="CarregadorUI",
+            operacao="Carregamento de Arquivo",
+            parametros={
+                "arquivo": caminho.name,
+                "encoding": encoding,
+                "separador": sep,
+            },
         )
+        dataset.historico.append(historico_carregamento)
 
-    with col2:
-        sep = st.radio(
-            "Separador",
-            [",", ";", "|"],
-            captions=[
-                "csv padrão",
-                "csv's números com formato brasileiro",
-                "csv's de formato misto"
-            ],
-            key=f"sep_{arquivo.name}",
-            # placeholder="Selecione um ou deixe vazio se for zip..."
-        )
+        return dataset
 
-    with col3:
-        encoding = st.radio(
-            "Codificação",
-            ["utf-8", "latin1", "cp1252"],
-            captions=[
-                "Padrão Universal",
-                "Padrão Latino",
-                "Padrão Microsoft"
-            ],
-            key=f"encoding_{arquivo.name}"
-            # placeholder="Selecione um ou deixe vazio se for zip..."
-        )
+    # ----------------------------------------------------------------
+    def _carregar_arquivo(self, arquivo):
+        datasets_brutos = {}
 
-    if tipo == "Simples":
-        if arquivo.name.endswith(".zip"):
-            caminho = descompactar(arquivo)
-            temp = carregar_composto(caminho, sep=sep, encoding=encoding)
-            datasets = temp
-        else:
-            temp = carregar_dataset(arquivo, sep=sep, encoding=encoding)
-            datasets[arquivo.stem] = temp
-    elif tipo == "Conjunto":
-        if arquivo.name.endswith(".zip"):
-            caminho = descompactar(arquivo)
-            temp = carregar_composto(caminho, sep=sep, encoding=encoding)
-            datasets = temp
-        else:
-            temp = carregar_conjunto(arquivo, sep=sep, encoding=encoding)
-            datasets[arquivo.stem] = temp
-    elif tipo == "Composto":
-        if arquivo.name.endswith(".zip"):
-            caminho = descompactar(arquivo)
-            temp = carregar_composto(caminho, sep=sep, encoding=encoding)
-            datasets = temp
-        else:
-            temp = carregar_composto(arquivo, sep=sep, encoding=encoding)
-            datasets[arquivo.stem] = temp
-    if st.button("Carregar Dados", key=f"loaddata_{arquivo.name}"):
-        st.session_state["datasets"].update(datasets)
-        st.success(f"Carregamento de {arquivo.name} concluido")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            tipo = st.radio(
+                "Tipo de carregamento",
+                ["Simples", "Conjunto", "Composto"],
+                # placeholder="Escolha ao menos um",
+                captions=[
+                    "Arquivo csv simples",
+                    "Arquivo zip com csv's do mesmo dataset",
+                    "Arquivo zip com csv's de datasets diferentes"
+                ],
+                key=f"tipo_{arquivo.name}"
+
+            )
+
+        with col2:
+            sep = st.radio(
+                "Separador",
+                [",", ";", "|"],
+                captions=[
+                    "csv padrão",
+                    "csv's números com formato brasileiro",
+                    "csv's de formato misto"
+                ],
+                key=f"sep_{arquivo.name}",
+                # placeholder="Selecione um ou deixe vazio se for zip..."
+            )
+
+        with col3:
+            encoding = st.radio(
+                "Codificação",
+                ["utf-8", "latin1", "cp1252"],
+                captions=[
+                    "Padrão Universal",
+                    "Padrão Latino",
+                    "Padrão Microsoft"
+                ],
+                key=f"encoding_{arquivo.name}"
+                # placeholder="Selecione um ou deixe vazio se for zip..."
+            )
+
+        if tipo == "Simples":
+            if arquivo.name.endswith(".zip"):
+                caminho = self.ldr.descompactar(arquivo)
+                datasets_brutos = self.ldr.carregar_composto(
+                    caminho, sep=sep, encoding=encoding)
+            else:
+                temp = self.ldr.carregar_dataset(
+                    arquivo, sep=sep, encoding=encoding)
+                datasets_brutos[arquivo.name] = temp
+        elif tipo == "Conjunto":
+            if arquivo.name.endswith(".zip"):
+                caminho = self.ldr.descompactar(arquivo)
+                datasets_brutos = self.ldr.carregar_composto(
+                    caminho, sep=sep, encoding=encoding)
+            else:
+                temp = self.ldr.carregar_conjunto(
+                    arquivo, sep=sep, encoding=encoding)
+                datasets_brutos[arquivo.name] = temp
+        elif tipo == "Composto":
+            if arquivo.name.endswith(".zip"):
+                caminho = self.ldr.descompactar(arquivo)
+                datasets_brutos = self.ldr.carregar_composto(
+                    caminho, sep=sep, encoding=encoding)
+            else:
+                temp = self.ldr.carregar_composto(
+                    arquivo, sep=sep, encoding=encoding)
+                datasets_brutos[arquivo.name] = temp
+
+        if st.button("Carregar Dados", key=f"loaddata_{arquivo.name}"):
+            datasets_carregados = {}
+
+            for nome_ds, df in datasets_brutos.items():
+                if isinstance(df, pd.DataFrame):
+                    dataset_obj = self._salvar_dataset(
+                        nome=nome_ds,
+                        df=df,
+                        caminho=arquivo,
+                        sep=sep,
+                        encoding=encoding,
+                    )
+                    datasets_carregados[nome_ds] = dataset_obj
+
+            st.session_state["datasets"].update(datasets_carregados)
+            st.success(f"Carregamento de {arquivo.name} concluido")

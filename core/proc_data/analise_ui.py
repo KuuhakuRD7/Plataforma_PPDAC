@@ -1,24 +1,76 @@
+import copy
+from datetime import datetime
 import streamlit as st
-from core.proc_data.analise import *
+from core.proc_data.analise import Analisador as anl
+from core.model.dataset import Dataset, DatasetHistorico
 
 
-def exibir_juncao(nome, df):
+class AnalisadorUI:
 
-    st.info(
-        "O segundo DataFrame deve estar carregado no Session State."
-    )
+    def __init__(self):
+        self.historico_analise = {}
 
-    if "datasets" not in st.session_state or len(st.session_state["datasets"]) < 2:
+    # ----------------------------------------------------------------
 
-        st.warning(
-            "Nenhum DataFrame disponível para junção."
+    def _registrar_operacao(
+        self,
+        dataset_origem: Dataset,
+        sufixo_nome: str,
+        novo_df,
+        operacao: str,
+        parametros: dict,
+    ) -> Dataset:
+        nome_analisado = f"{dataset_origem.nome}_{sufixo_nome}"
+
+        novo_dataset = copy.deepcopy(dataset_origem)
+        novo_dataset.nome = nome_analisado
+        novo_dataset.df = novo_df
+
+        novo_dataset.metadata.atualizado_em = datetime.now()
+        novo_dataset.metadata.linhas = novo_df.shape[0]
+        novo_dataset.metadata.colunas = novo_df.shape[1]
+
+        registro_historico = DatasetHistorico(
+            modulo="AnalisadorUI",
+            operacao=operacao,
+            parametros=parametros,
+        )
+        novo_dataset.historico.append(registro_historico)
+
+        dataset_origem.variacoes.append(nome_analisado)
+
+        st.session_state["datasets-analisado"][nome_analisado] = novo_dataset
+        return novo_dataset
+
+    # ----------------------------------------------------------------
+    def exibir_juncao(self, dataset: Dataset):
+        nome = dataset.nome
+        df = dataset.df
+
+        st.info(
+            "O segundo DataFrame deve estar carregado no Session State."
         )
 
-    else:
+        repositorio_datasets = st.session_state.get("datasets", {})
+
+        if len(repositorio_datasets) < 2:
+            st.warning("Nenhum outro DataFrame disponível para junção.")
+            return
+
+        opcoes = [k for k in repositorio_datasets.keys() if k != nome]
+        if not opcoes:
+            st.warning(
+                "Selecione um dataset diferente do atual para a junção.")
+            return
 
         opc = st.selectbox(
-            "A juntar", st.session_state["datasets"].keys())
-        df2 = st.session_state["datasets"][opc]
+            "Selecione o Dataset para Junção",
+            opcoes,
+            key=f"{nome}_select_ds2",
+        )
+        obj_dataset2 = repositorio_datasets[opc]
+        df2 = obj_dataset2.df if isinstance(
+            obj_dataset2, Dataset) else obj_dataset2
         left_keys = st.multiselect(
             "Colunas do DataFrame Atual",
             options=df.columns.tolist(),
@@ -42,141 +94,139 @@ def exibir_juncao(nome, df):
             key=f"{nome}_join_type"
         )
 
-    merge_key = f"merge_{nome}"
-
-    if st.button(
-        "Executar Junção",
-        key=f"{nome}_btn_juncao"
-    ):
-
-        if not left_keys or not right_keys:
-
-            st.warning(
-                "Selecione as colunas de junção."
-            )
-
-        elif len(left_keys) != len(right_keys):
-
-            st.warning(
-                "A quantidade de colunas deve ser igual nos dois DataFrames."
-            )
-
-        else:
-
-            resultado = juncao(
-                df,
-                df2,
-                left_keys,
-                right_keys,
-                how
-            )
-
-            st.session_state["resultado_atual"][nome] = resultado
-
-            st.session_state[merge_key] = resultado
-
-    if merge_key in st.session_state:
-
-        resultado = st.session_state[merge_key]
-
-        st.success(
-            f"{len(resultado)} registros encontrados."
-        )
-
-        st.dataframe(
-            resultado,
-            width="stretch"
-        )
+        merge_key = f"merge_{nome}"
 
         if st.button(
-            "Aplicar Análise",
-            key=f"btnaj_{nome}"
+            "Executar Junção",
+            key=f"{nome}_btn_juncao"
         ):
 
-            analisado = f"{nome}_juncao"
+            if not left_keys or not right_keys:
 
-            st.session_state["datasets-analisado"][
-                analisado
-            ] = resultado.copy()
+                st.warning(
+                    "Selecione as colunas de junção."
+                )
 
-            st.success(
-                f"Dataset '{analisado}' criado."
-            )
+            elif len(left_keys) != len(right_keys):
 
-            st.dataframe(
-                resultado.head()
-            )
+                st.warning(
+                    "A quantidade de colunas deve ser igual nos dois DataFrames."
+                )
 
+            else:
 
-def exibir_filtragem(nome, df):
+                resultado = anl.juncao(
+                    df,
+                    df2,
+                    left_keys,
+                    right_keys,
+                    how
+                )
 
-    cols = list(df.columns)
+                st.session_state["resultado_atual"][nome] = resultado
+                st.session_state[merge_key] = {
+                    "resultado": resultado,
+                    "params": {
+                        "dataset_direita": opc,
+                        "chaves_esquerda": left_keys,
+                        "chaves_direita": right_keys,
+                        "tipo_juncao": how,
+                    },
+                }
 
-    filtros = {}
+        if merge_key in st.session_state:
+            dados_merge = st.session_state[merge_key]
+            resultado = dados_merge["resultado"]
+            params = dados_merge["params"]
 
-    coluna_filtro = st.selectbox(
-        "Selecione a coluna",
-        options=df.columns.tolist(),
-        key=f"{nome}_filtro_coluna"
-    )
+            st.success(f"{len(resultado)} registros encontrados na junção.")
+            st.dataframe(resultado, width="stretch")
 
-    valores_disponiveis = (
-        df[coluna_filtro]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
+            if st.button("Gravar Junção", key=f"btnaj_{nome}"):
+                novo_obj = self._registrar_operacao(
+                    dataset_origem=dataset,
+                    sufixo_nome="juncao",
+                    novo_df=resultado,
+                    operacao="Junção",
+                    parametros=params,
+                )
+                st.success(f"Dataset '{novo_obj.nome}' criado com sucesso.")
+                st.dataframe(novo_obj.df.head())
 
-    valores_selecionados = st.multiselect(
-        "Selecione os valores",
-        options=valores_disponiveis,
-        key=f"{nome}_filtro_valores"
-    )
+    # ----------------------------------------------------------------
+    def exibir_filtragem(self, dataset: Dataset):
+        nome = dataset.nome
+        df = dataset.df
 
-    filtros = {
-        coluna_filtro: valores_selecionados
-    }
-
-    resultado = filtrar_dados(
-        df,
-        **filtros
-    )
-
-    st.session_state["resultado_atual"][nome] = resultado
-
-    st.write("Dados filtrados")
-    st.dataframe(resultado, width='stretch')
-
-    if st.button("Gravar Filtros", key=f"btnaf_{nome}"):
-        analisado = f"{nome}_filtrado"
-        st.session_state["datasets-analisado"][analisado] = resultado
-        st.success(f"Dataset '{analisado}' criado.")
-        st.dataframe(resultado.head())
-
-
-def exibir_agregacao(nome, df):
-
-    eixo_x = st.selectbox(
-        "Agrupar por",
-        options=df.columns.tolist(),
-        key=f"{nome}_ag_eixo"
-    )
-
-    colunas_numericas = (
-        df
-        .select_dtypes(include="number")
-        .columns
-        .tolist()
-    )
-
-    if not colunas_numericas:
-
-        st.warning(
-            "Não existem colunas numéricas para agregação."
+        coluna_filtro = st.selectbox(
+            "Selecione a coluna",
+            options=df.columns.tolist(),
+            key=f"{nome}_filtro_coluna"
         )
 
-    else:
+        valores_disponiveis = (
+            df[coluna_filtro]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+
+        valores_selecionados = st.multiselect(
+            "Selecione os valores",
+            options=valores_disponiveis,
+            key=f"{nome}_filtro_valores"
+        )
+
+        filtros = {
+            coluna_filtro: valores_selecionados
+        }
+
+        resultado = anl.filtrar_dados(
+            df,
+            **filtros
+        )
+
+        st.session_state["resultado_atual"][nome] = resultado
+
+        st.write("Dados filtrados")
+        st.dataframe(resultado, width='stretch')
+
+        if st.button("Gravar Filtros", key=f"btnaf_{nome}"):
+            novo_obj = self._salvar_dataset_analisado(
+                dataset_origem=dataset,
+                sufixo_nome="filtrado",
+                novo_df=resultado,
+                operacao="Filtragem",
+                parametros=filtros,
+            )
+            st.success(f"Dataset '{novo_obj.nome}' criado com sucesso.")
+            st.dataframe(novo_obj.df.head())
+
+    # ----------------------------------------------------------------
+    def exibir_agregacao(self, dataset: Dataset):
+        nome = dataset.nome
+        df = dataset.df
+
+        eixo_x = st.selectbox(
+            "Agrupar por",
+            options=df.columns.tolist(),
+            key=f"{nome}_ag_eixo"
+        )
+
+        colunas_numericas = (
+            df
+            .select_dtypes(include="number")
+            .columns
+            .tolist()
+        )
+
+        if not colunas_numericas:
+
+            st.warning(
+                "Não existem colunas numéricas para agregação."
+            )
+            return
 
         coluna_alvo = st.selectbox(
             "Coluna alvo",
@@ -211,39 +261,50 @@ def exibir_agregacao(nome, df):
             key=f"{nome}_ag_ord"
         )
 
-    resultado = agregar_dados(
-        df=df,
-        eixo_x=eixo_x,
-        coluna_alvo=coluna_alvo,
-        selections=colunas_secundarias,
-        top_n=top_n,
-        ordenar=ordenar
-    )
+        resultado = anl.agregar_dados(
+            df=df,
+            eixo_x=eixo_x,
+            coluna_alvo=coluna_alvo,
+            selections=colunas_secundarias,
+            top_n=top_n,
+            ordenar=ordenar
+        )
 
-    st.session_state["resultado_atual"][nome] = resultado
+        st.session_state["resultado_atual"][nome] = resultado
 
-    st.write("Dados agregados")
-    st.dataframe(resultado, width='stretch')
+        st.write("Dados agregados")
+        st.dataframe(resultado, width='stretch')
 
-    if st.button("Gravar Agregacao", key=f"btnaa_{nome}"):
-        analisado = f"{nome}_agregado"
-        st.session_state["datasets-analisado"][analisado] = resultado
-        st.success(f"Dataset '{analisado}' criado.")
-        st.dataframe(resultado.head())
+        if st.button("Gravar Agregação", key=f"btnaa_{nome}"):
+            params_agregacao = {
+                "eixo_x": eixo_x,
+                "coluna_alvo": coluna_alvo,
+                "selections": colunas_secundarias,
+                "top_n": top_n,
+                "ordenar": ordenar,
+            }
 
+            novo_obj = self._salvar_dataset_analisado(
+                dataset_origem=dataset,
+                sufixo_nome="agregado",
+                novo_df=resultado,
+                operacao="Agregação",
+                parametros=params_agregacao,
+            )
+            st.success(f"Dataset '{novo_obj.nome}' criado com sucesso.")
+            st.dataframe(novo_obj.df.head())
 
-def exibir_analise(nome, df):
-    df_temp = df.copy()
+    # ----------------------------------------------------------------
+    def exibir_analise(self, nome, dataset):
+        if "resultado_atual" not in st.session_state:
+            st.session_state["resultado_atual"] = {}
 
-    if "resultado_atual" not in st.session_state:
-        st.session_state["resultado_atual"] = {}
+        st.subheader(f"Dataset em Analise:{nome} ")
+        if dataset is not None:
 
-    st.header("Análise dos Dados")
-    if df_temp is not None:
-
-        with st.expander("Filtros"):
-            exibir_filtragem(nome, df_temp)
-        with st.expander("Agregações"):
-            exibir_agregacao(nome, df_temp)
-        with st.expander("Junção"):
-            exibir_juncao(nome, df_temp)
+            with st.expander("Filtros"):
+                self.exibir_filtragem(dataset)
+            with st.expander("Agregações"):
+                self.exibir_agregacao(dataset)
+            with st.expander("Junção"):
+                self.exibir_juncao(dataset)
