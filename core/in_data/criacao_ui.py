@@ -1,4 +1,5 @@
 from datetime import datetime
+from faker import Faker
 
 import streamlit as st
 import pandas as pd
@@ -12,8 +13,8 @@ from core.proc_data.exploracao_ui import ExploradorUI
 class CriadorUI:
     """
         Classe responsavel pela interação da interface
-        com o carregamento de datasets, por meio de:
-        - Carregamento de arquivos
+        com o desenvolvimento de datasets, por meio de:
+        - Criação Manual ou Automática
     """
 
     def __init__(self):
@@ -22,6 +23,8 @@ class CriadorUI:
         self.num_linhas = None
         self.estrutura = {}
         self.df_editado = None
+
+
         self.tipos = [
             "string",
             "int",
@@ -31,8 +34,73 @@ class CriadorUI:
             "datetime"
         ]
 
-    # ---------------------------------------------------------
+        self.faker = Faker("pt_BR") # seed_instance(32)
 
+    # ---------------------------------------------------------
+    def _gerar_valores_faker(self, coluna, tipo):
+        coluna_normalizada = coluna.lower().strip()
+
+        string_faker = {
+            "nome": self.faker.name,
+            "email": self.faker.email,
+            "telefone": self.faker.phone_number,
+            "endereço": self.faker.address,
+            "cidade": self.faker.city,
+            "estado": self.faker.state,
+            "companhia": self.faker.company,
+            "emprego": self.faker.job,
+            "cpf": self.faker.cpf,
+            "cnpj": self.faker.cnpj,
+            "texto": lambda: self.faker.text(max_nb_chars=30),
+            "palavra": self.faker.word
+        }
+        int_faker = {
+            "idade": lambda: self.faker.random_int(min=0, max=120)
+        }
+
+        float_faker = {
+            "salario": lambda:  self.faker.pyfloat(left_digits=4,right_digits=2,positive=True),
+        }
+
+        if tipo == "string" and coluna_normalizada in string_faker:
+            return string_faker[coluna_normalizada]()
+
+        if tipo == "int" and coluna_normalizada in int_faker:
+            return int_faker[coluna_normalizada]()
+
+        if tipo == "float" and coluna_normalizada in float_faker:
+            return float_faker[coluna_normalizada]()
+
+        if tipo == "string":
+            return self.faker.text(max_nb_chars=30)
+        elif tipo == "int":
+             return self.faker.random_int(min=0, max=120)
+        elif tipo == "float":
+            return self.faker.pyfloat(left_digits=4,right_digits=2,positive=True)
+        elif tipo == "bool":
+            return self.faker.boolean()
+
+        elif tipo == "date":
+            return self.faker.date_object()
+
+        elif tipo == "datetime":
+            return self.faker.date_time()
+
+        return None
+
+    # ---------------------------------------------------------
+    def _gerar_dataset_faker(self):
+        dados = {}
+        estrutura = st.session_state.estrutura
+        for coluna, tipo in estrutura.items():
+            dados[coluna] = [
+                self._gerar_valores_faker(coluna, tipo)
+                for _ in range(self.num_linhas)
+            ]
+        st.session_state.df_editor = pd.DataFrame(dados)
+
+
+    # ---------------------------------------------------------
     def _base_inicial(self):
         nome_dataset = st.text_input(
             "Nome do Dataset",
@@ -132,21 +200,30 @@ class CriadorUI:
 
         st.subheader("Configurar Colunas")
         criar_tabela = self._estruturar_dataset()
-        st.divider()
 
         if criar_tabela:
             self._tipos_colunas()
 
+        st.divider()
+
         if st.session_state.df_editor is not None:
 
-            st.subheader("Preenchimento dos Registros")
+            operacao = "Manual"
             self._povoar_dataset()
+
+
+            if st.button("Gerar Automaticamente"):
+                self._gerar_dataset_faker()
+                operacao = "Automatica"
+
+
+            st.divider()
 
             if st.button("Gravar"):
                 novo_dataset = Dataset(
-                    nome=self.nome_dataset,
-                    dataframe=self.df_editado,
-                    origem="CriadorUI"
+                        nome=self.nome_dataset,
+                        df=self.df_editado,
+                        origem="CriadorUI"
                 )
 
                 novo_dataset.metadata.linhas = self.df_editado.shape[0]
@@ -154,9 +231,9 @@ class CriadorUI:
                 novo_dataset.metadata.criado_em = datetime.now()
 
                 historico_criacao = DatasetHistorico(
-                    modulo="CriadorUI",
-                    operacao="Criação manual de tabela",
-                    parametros={"colunas": list(self.estrutura.keys())}
+                        modulo="CriadorUI",
+                        operacao=f"Criação {operacao} de tabela",
+                        parametros={"colunas": list(self.estrutura.keys())}
                 )
                 novo_dataset.historico.append(historico_criacao)
 
@@ -165,7 +242,7 @@ class CriadorUI:
 
                 st.success(f"{self.nome_dataset} gravado com sucesso.")
 
-            st.divider()
+                st.divider()
 
-            st.subheader("Informações")
-            ExploradorUI.exploracao_base(self.df_editado)
+                st.subheader("Informações")
+                ExploradorUI.exploracao_base(self.df_editado)

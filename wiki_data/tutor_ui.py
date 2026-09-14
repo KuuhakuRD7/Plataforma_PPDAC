@@ -10,7 +10,8 @@ class TutorUI:
 
     # ----------------------------------------------------------------
     def exibir_inicio(self):
-        st.write("inicio")
+        # st.write("inicio")
+        pass
 
     # ----------------------------------------------------------------
     @st.cache_data

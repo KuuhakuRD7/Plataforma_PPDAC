@@ -10,8 +10,6 @@ from wiki_data.tutor_ui import TutorUI
 from wiki_data.planejar_ui import PlanejadorUI
 from wiki_data.relatar_ui import RelatadorUI
 
-# from core.in_data.obtencao import UPLOAD_DIR, OUTPUT_DIR, INSTANSIAS
-
 from core.in_data.obtencao_ui import CarregadorUI
 from core.in_data.criacao_ui import CriadorUI
 from core.out_data.exportacao_ui import ExportadorUI
@@ -192,8 +190,7 @@ class MainApp:
 
     # ----------------------------------------------------------------
     def carregar_aba(self, nome_aba: str, aba, titulo: str, texto: str, func_exibir):
-        abas_base = ["Início", "Wikis",
-                     "Planejamento", "Carregamento", "Criação"]
+        abas_base = ["Início", "Wikis", "Planejamento", "Carregamento", "Criação"]
 
         with aba:
             st.title(titulo)
