@@ -105,8 +105,198 @@ class MainApp:
             initial_sidebar_state="expanded",
             # menu_items={"Page": "UrlTo",}
         )
+        self._aplicar_estilo_css()
 
+    def _aplicar_estilo_css(self):
         # Configuração por html e css
+        st.markdown(
+        """
+        <!-- Importação de ícones W3 / Font Awesome -->
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+        <style>
+            :root {
+                /* Cores do Laboratório */
+                --lab-blue: #2573DA;
+                --lab-dark: #0C1523;
+                --lab-light: #F5F9FD;
+
+                --primary-hover: #125BB2;
+                --success: #10B981;
+                --warning: #F19E0B;
+            }
+
+            /* Tema claro do Streamlit */
+            [data-theme="light"] {
+                --bg-main: #F8FAFC;
+                --surface-card: #FFFFFF;
+                --border-color: #E2E8F0;
+                --text-primary: #0F172A;
+                --text-secondary: #475569;
+            }
+
+            /* Tema escuro do Streamlit */
+            [data-theme="dark"] {
+                --bg-main: #090D16;
+                --surface-card: #0C1523;
+                --border-color: #1E293B;
+                --text-primary: #F8FAFC;
+                --text-secondary: #94A3B8;
+            }
+
+            /* Aplicação Principal */
+            .stApp {
+                background-color: var(--bg-main);
+                color: var(--text-primary);
+            }
+
+            /* Cabeçalho */
+            [data-testid="stHeader"] {
+                background-color: transparent !important;
+            }
+
+            /* Barra Lateral (Sidebar) */
+            [data-testid="stSidebar"] {
+                background-color: var(--surface-card) !important;
+                border-right: 1px solid var(--border-color);
+            }
+
+            /* Forçar contraste nos textos da barra lateral */
+            [data-testid="stSidebar"] *,
+            [data-testid="stSidebar"] p,
+            [data-testid="stSidebar"] label,
+            [data-testid="stSidebar"] span {
+                color: var(--text-primary) !important;
+            }
+
+            /* Containers / Cards */
+            div[data-testid="stVerticalBlockBorderWrapper"] {
+                background-color: var(--surface-card);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 1rem;
+            }
+
+            /* Títulos */
+            h1, h2, h3, h4, h5, h6 {
+                color: var(--text-primary) !important;
+                font-weight: 700 !important;
+                letter-spacing: -0.02em;
+            }
+
+            /* Textos e Parágrafos */
+            p, label, .stMarkdown {
+                color: var(--text-secondary);
+                line-height: 1.6;
+            }
+
+            /* Botões Primários */
+            div.stButton > button[kind="primary"],
+            div.stFormSubmitButton > button[kind="primary"] {
+                background-color: var(--lab-blue) !important;
+                border: 1px solid var(--lab-blue) !important;
+                color: #FFFFFF !important;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+            }
+
+            div.stButton > button[kind="primary"]:hover,
+            div.stFormSubmitButton > button[kind="primary"]:hover {
+                background-color: var(--primary-hover) !important;
+                border-color: var(--primary-hover) !important;
+                box-shadow: 0 4px 12px rgba(37, 115, 218, 0.25);
+            }
+
+            /* Botões Secundários */
+            div.stButton > button:not([kind="primary"]),
+            div.stFormSubmitButton > button:not([kind="primary"]) {
+                background-color: var(--surface-card) !important;
+                border: 1px solid var(--border-color) !important;
+                color: var(--text-primary) !important;
+                border-radius: 8px;
+                font-weight: 500;
+            }
+
+            div.stButton > button:not([kind="primary"]):hover {
+                border-color: var(--lab-blue) !important;
+                color: var(--lab-blue) !important;
+            }
+
+            /* Butões Radio */
+            [data-testid="stSidebar"] div[role="radiogroup"] label {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 0.65rem;
+
+                padding: 0.65rem 0.85rem;
+                margin: 0.25rem 0;
+
+                border: 1px solid transparent;
+                border-radius: 8px;
+
+                cursor: pointer;
+                transition:
+                    background-color 0.2s ease,
+                    border-color 0.2s ease,
+                    color 0.2s ease;
+            }
+
+            [data-testid="stSidebar"]
+            div[role="radiogroup"] label:has(input:checked) {
+                background-color: color-mix(
+                    in srgb,
+                    var(--lab-blue) 10%,
+                    var(--surface-card)
+                ) !important;
+
+                border: 1px solid var(--lab-blue) !important;
+                box-shadow: 0 0 0 1px
+                    color-mix(in srgb, var(--lab-blue) 12%, transparent);
+
+                padding-left: 2.1rem;
+            }
+
+            /* Áreas de Upload */
+            [data-testid="stFileUploader"] section {
+                background-color: var(--surface-card) !important;
+                border: 2px dashed var(--border-color) !important;
+                border-radius: 10px;
+            }
+
+            /* Inputs, Seletores e Textareas */
+            div[data-baseweb="input"] > div,
+            div[data-baseweb="select"] > div,
+            div[data-baseweb="textarea"] > div {
+                background-color: var(--surface-card) !important;
+                border-color: var(--border-color) !important;
+                border-radius: 8px;
+                color: var(--text-primary) !important;
+            }
+
+            /* Tabelas e Dataframes */
+            div[data-testid="stDataFrame"],
+            div[data-testid="stDataEditor"] {
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                background-color: var(--surface-card);
+            }
+
+            /* Utilitário para Ícones W3 / FontAwesome */
+            .icon-lab {
+                color: var(--lab-blue) !important;
+                margin-right: 8px;
+            }
+
+            /* Menu e Rodapé nativos ocultos */
+            #MainMenu, footer {
+                /* visibility: hidden; */
+            }
+        </style>
+        """, unsafe_allow_html=True
+        )
 
 
     # ----------------------------------------------------------------
