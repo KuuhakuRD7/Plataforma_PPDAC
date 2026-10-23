@@ -86,23 +86,28 @@ class GerenciadorEstados():
 class MainApp:
 
     def __init__(self):
+        # Estruturar a Plataforma antes de tudo
+        self.configurar_layout()
+
         # Atributos
         self.data_sessao = datetime.now()
         self.STM = GerenciadorEstados()
 
         # Metodos
-        self.configurar_layout()
         self.inicializar_modulos()
 
     # ----------------------------------------------------------------
     def configurar_layout(self):
         st.set_page_config(
-            page_title="Plataforma PPDAC",
+            page_title="Laboratório de Dados | PPDAC",
             # page_icon="img/icon.png",
             layout="wide",
-            # initial_sidebar_state="auto",
+            initial_sidebar_state="expanded",
             # menu_items={"Page": "UrlTo",}
         )
+
+        # Configuração por html e css
+
 
     # ----------------------------------------------------------------
     def inicializar_modulos(self):
@@ -125,83 +130,157 @@ class MainApp:
     # ----------------------------------------------------------------
     def carregar_paginas(self):
         paginas = {
-            "Início": (
-                "Visão Geral da Plataforma",
-                "Bem-vindo ao ambiente de análise de dados. Esta ferramenta guia você de forma estruturada por todas as etapas da resolução de problemas orientados a dados.",
-                self.Tutor.exibir_inicio
-            ),  # ---------------------------
-            "Wikis": (
-                "Base de Conhecimento e PPDAC",
-                "Explore os conceitos fundamentais da ciência de dados e entenda em detalhes o método PPDAC (Problema, Planejamento, Dados, Análise e Conclusão).",
-                self.Tutor.exibir_wikis
-            ),  # ---------------------------
-            "Planejamento": (
-                "Planejamento do Estudo",
-                "Defina o problema de pesquisa, formula hipóteses, especifique a população-alvo e selecione os indicadores necessários para o estudo.",
-                self.Planejador.exibir_planejar
-            ),  # ---------------------------
-            "Criação": (
-                "Criação de Dataset",
-                "Área responsável por criar datasets para experimentação, seja manualmente ou por meio de simulações e geração aleatória de dados.",
-                self.Criador.exibir_criacao
-            ),  # ---------------------------
-            "Carregamento": (
-                "Carregamento de Dados",
-                "Importe arquivos de fontes externas (CSV, Excel, JSON, Banco de Dados) para iniciar a manipulação e preparação dos seus dados.",
-                self.Carregador.exibir_carregamento
-            ),  # ---------------------------
-            "Exploração": (
-                "Exploração Inicial de Dados",
-                "Inspecione a estrutura básica do conjunto de dados: tipos de colunas, contagem de registros, valores ausentes e estatísticas sumárias preliminares.",
-                self.Explorador.exibir_exploracao
-            ),  # ---------------------------
-            "Tratamento": (
-                "Tratamento e Limpeza de Dados",
-                "Corrija inconformidades nos dados realizando imputação de nulos, remoção de duplicatas, conversão de tipos e filtragem de outliers.",
-                self.Tratador.exibir_tratamento
-            ),  # ---------------------------
-            "Análise": (
-                "Análise Estatística e Modelagem",
-                "Aplique técnicas estatísticas descritivas e inferenciais para responder às hipóteses e identificar padrões Relevantes nos dados.",
-                self.Analisador.exibir_analise
-            ),  # ---------------------------
-            "Visualização": (
-                "Visualização de Dados",
-                "Gere gráficos iterativos e dashboards interativos para comunicar tendências, distribuições e relações entre as variáveis.",
-                self.Visualizador.exibir_visualizacao
-            ),  # ---------------------------
-            "Exportação": (
-                "Exportação de Resultados",
-                "Exporte os dados tratados e os artefatos gerados em diferentes formatos (CSV, Excel, imagens ou JSON) para compartilhamento.",
-                self.Exportador.exibir_exportacao
-            ),  # ---------------------------
-            "Conclusão": (
-                "Conclusão e Relatório Final",
-                "Sintetize os achados da análise, valide as hipóteses planejadas inicialmente e gere o relatório explicativo para tomada de decisão.",
-                self.Relatador.exibir_relato
-            ),  # ---------------------------
+            "Início": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Tutor.exibir_inicio,
+                "dataset": False,
+            },
+            "Wikis": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Tutor.exibir_wikis,
+                "dataset": False,
+            },
+            "Planejamento": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Planejador.exibir_planejar,
+                "dataset": False,
+            },
+            "Criação": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Criador.exibir_criacao,
+                "dataset": False,
+            },
+            "Carregamento": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Carregador.exibir_carregamento,
+                "dataset": False,
+            },
+            "Exploração": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Explorador.exibir_exploracao,
+                "dataset": True,
+            },
+            "Tratamento": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Tratador.exibir_tratamento,
+                "dataset": True,
+            },
+            "Análise": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Analisador.exibir_analise,
+                "dataset": True,
+            },
+            "Visualização": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Visualizador.exibir_visualizacao,
+                "dataset": True,
+            },
+            "Exportação": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Exportador.exibir_exportacao,
+                "dataset": True,
+            },
+            "Conclusão": {
+                "grupo": "",
+                "titulo": "",
+                "descricao": (),
+                "funcao": self.Relatador.exibir_relato,
+                "dataset": True,
+            },
         }
 
-        abas = st.tabs(list(paginas.keys()))
+        grupos = {
+            "Sobre ciência de dados": [
+                "Início", "Wikis"
+            ],
+            "Inserção de dados" : [
+                "Criação", "Carregamento"
+            ],
+            "Trabalhar com dados": [
+                "Exploração", "Tratamento", "Análise", "Visualização"
+            ],
+            "Investigação": [
+                "Planejamento", "Conclusão", "Exportação"
+            ],
+        }
 
-        for aba, nome_aba in zip(abas, paginas.keys()):
-            titulo, texto, func_exibir = paginas[nome_aba]
-            self.carregar_aba(nome_aba, aba, titulo, texto, func_exibir)
+        st.sidebar.markdown(
+            '<h3><i class="fa fa-flask icon-lab"></i> Laboratório de Dados</h3>',
+            unsafe_allow_html=True
+        )
+        st.sidebar.caption("Aprender • Investigar • Descobrir")
+        st.sidebar.divider()
 
-    # ----------------------------------------------------------------
-    def carregar_aba(self, nome_aba: str, aba, titulo: str, texto: str, func_exibir):
-        abas_base = ["Início", "Wikis", "Planejamento", "Carregamento", "Criação"]
+        grupo = st.sidebar.radio(
+            "Área de trabalho",
+            list(grupos.keys()),
+            key="grupo_navegacao",
+        )
 
-        with aba:
-            st.title(titulo)
-            st.write(texto)
-            if nome_aba not in abas_base:
-                nome_df, df = self.escolher_fonte_e_dataset(
-                    f"{nome_aba}_data_select")
-                if df is not None:
-                    func_exibir(nome_df, df)
+        pagina = st.sidebar.radio(
+            "Escolhe uma atividade",
+            grupos[grupo],
+            key=f"pagina_{grupo}",
+        )
+
+        st.sidebar.divider()
+        st.sidebar.caption("Método de investigação")
+        st.sidebar.markdown(
+            '<div style="font-size: 0.85rem; line-height: 1.8;">'
+            '<i class="fa fa-search icon-lab"></i> Problema <br>'
+            '<i class="fa fa-map-o icon-lab"></i> Plano <br>'
+            '<i class="fa fa-database icon-lab"></i> Dados <br>'
+            '<i class="fa fa-line-chart icon-lab"></i> Análise <br>'
+            '<i class="fa fa-lightbulb-o icon-lab"></i> Conclusão'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        config = paginas[pagina]
+
+        st.title(config["titulo"])
+        st.markdown(config["descricao"])
+        st.divider()
+
+        if config["dataset"]:
+            nome_df, dataset = self.escolher_fonte_e_dataset(
+                f"{pagina}_data_select"
+            )
+
+            if dataset is not None:
+                df = (
+                    dataset.df
+                    if hasattr(dataset, "df")
+                    else dataset
+                )
+                config["funcao"](nome_df, df)
             else:
-                func_exibir()
+                st.info(
+                    "Primeiro, cria ou importa um conjunto de dados "
+                    "na área «Trabalhar com dados»."
+                )
+        else:
+            config["funcao"]()
 
     # ----------------------------------------------------------------
     def listar_datasets(self):
