@@ -72,6 +72,9 @@ class GerenciadorEstados():
         if "df_editor" not in st.session_state:
             st.session_state.df_editor = None
 
+        if "num_df_criados" not in st.session_state:
+            st.session_state.num_df_criados = 0
+
     # ----------------------------------------------------------------
 
     def resetar_estados_manual(self):
@@ -458,12 +461,12 @@ class MainApp:
             )
 
             if dataset is not None:
-                df = (
-                    dataset.df
-                    if hasattr(dataset, "df")
-                    else dataset
-                )
-                config["funcao"](nome_df, df)
+                # df = (
+                #     dataset.df
+                #     if hasattr(dataset, "df")
+                #     else dataset
+                # )
+                config["funcao"](nome_df, dataset)
             else:
                 st.info(
                     "Primeiro, cria ou importa um conjunto de dados "
