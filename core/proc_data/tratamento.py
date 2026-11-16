@@ -7,13 +7,15 @@ class Tratador:
 
     # ----------------------------------------------------------------
     @staticmethod
-    def preencher_nulos(df, coluna):
-        df[coluna] = (
-            df[coluna]
-            .fillna(
-                df[coluna].median()
-            )
-        )
+    def preencher_nulos(df, colunas_preencher):
+        for coluna, valor in colunas_preencher.items():
+            if coluna in df.columns:
+                df[coluna] = (
+                    df[coluna]
+                    .fillna(
+                        valor # df[coluna].median()
+                    )
+                )
         return df
 
     # ----------------------------------------------------------------
@@ -23,7 +25,7 @@ class Tratador:
 
     # ----------------------------------------------------------------
     @staticmethod
-    def limpar_colunas(df):
+    def padronizar_colunas(df):
         df.columns = (
             df.columns
             .astype(str)
@@ -126,7 +128,8 @@ class Tratador:
     @staticmethod
     def preparar_dataset(
         df,
-        limpar_cols=None,
+        padronizar_colunas=None,
+        colunas_preencher=None,
         colunas_remover=None,
         mapa_colunas=None,
         invalidos=None,
@@ -136,9 +139,11 @@ class Tratador:
         limites=None,
         # exportar=False
     ):
-        # alteracao encapsular o limpar_colunas
-        if limpar_cols:
-            df = Tratador.limpar_colunas(df)
+        # alteracao encapsular o padronizar_colunas
+        if padronizar_colunas:
+            df = Tratador.padronizar_colunas(df)
+        if colunas_preencher:
+            df = Tratador.preencher_nulos(df, colunas_preencher)
         # alteracao verificaao de colunas
         if colunas_remover:
             df = df.drop(colunas_remover, axis=1)  # errors="ignore"

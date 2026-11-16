@@ -17,7 +17,8 @@ class TratadorUI:
 
         st.header("Tratamento dos Dados")
 
-        limparCols = False
+        padronizar_colunas = False
+        colunas_preencher = {}
         colunas_remover = []
         renomeacoes = {}
         invalidos = {}
@@ -27,9 +28,34 @@ class TratadorUI:
         limites = {}
 
         with st.expander("Padronizar Colunas", key=f"toggle_{nome}_lpc"):
-            limparCols = st.toggle("Limpar colunas", key=f"toggle_{nome}_lc")
-            if limparCols:
-                df_temp = Tratador.limpar_colunas(df_temp)
+            padronizar_colunas = st.toggle("Limpar colunas", key=f"toggle_{nome}_lc")
+            if padronizar_colunas:
+                df_temp = Tratador.padronizar_colunas(df_temp)
+
+        with st.expander("Preencher Nulos", key=f"toggle_{nome}_pdcl"):
+            colunas = st.multiselect(
+                "Colunas com valores nulos",
+                df_temp.columns
+            )
+
+            for coluna in colunas:
+
+                tipo = st.radio(
+                    "Tipo de Preenchimento",
+                    ["Media", "Moda", "Mediana"],
+                    # placeholder="Escolha ao menos um",
+                    key=f"preenchimento_{nome}"
+
+                )
+
+                if tipo == "Media":
+                    valor = df_temp[coluna].mean()
+                elif tipo == "Moda":
+                    valor = df_temp[coluna].mode()
+                elif tipo == "Mediana":
+                    valor = df_temp[coluna].median()
+                colunas_preencher[coluna] = valor
+
 
         with st.expander(
                 "Remover Colunas", key=f"toggle_{nome}_sv"):
@@ -134,7 +160,8 @@ class TratadorUI:
 
         df_temp = Tratador.preparar_dataset(
             df=df.copy(),
-            limpar_cols=limparCols,
+            padronizar_colunas=padronizar_colunas,
+            colunas_preencher=colunas_preencher,
             colunas_remover=colunas_remover,
             mapa_colunas=renomeacoes,
             invalidos=invalidos,
@@ -164,7 +191,8 @@ class TratadorUI:
             dataset_tratado.metadata.colunas = df_temp.shape[1]
 
             tratamentos_executados = {
-                "Padronizar Colunas": limparCols,
+                "Padronizar Colunas": padronizar_colunas,
+                "Preencher Colunas": colunas_preencher,
                 "Remover Colunas": colunas_remover,
                 "Renomear Colunas": renomeacoes,
                 "Substituir Invalidos": invalidos,
