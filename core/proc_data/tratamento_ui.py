@@ -27,12 +27,41 @@ class TratadorUI:
         colunas_datas = []
         limites = {}
 
-        with st.expander("Padronizar Colunas", key=f"toggle_{nome}_lpc"):
+        painel_controles, painel_preview = st.columns([1.15,1.45])
+
+        with painel_controles:
+            with st.container(border=True):
+                tab_est, tab_val, tab_tip = st.tabs([
+                    "Estrutura",
+                    "Valores & Nulos",
+                    "Tipos & Limites"
+                ])
+
+
+        with tab_est:
             padronizar_colunas = st.toggle("Limpar colunas", key=f"toggle_{nome}_lc")
             if padronizar_colunas:
                 df_temp = Tratador.padronizar_colunas(df_temp)
 
-        with st.expander("Preencher Nulos", key=f"toggle_{nome}_pdcl"):
+            colunas_remover = st.multiselect(
+                "Colunas para remover",
+                df_temp.columns
+            )
+
+            colunas_renomear = st.multiselect(
+                "Colunas para renomear",
+                df_temp.columns
+            )
+
+            for coluna in colunas_renomear:
+                novo_nome = st.text_input(
+                    f"Novo nome para {coluna}",
+                    key=f"rename_{coluna}"
+                )
+                if novo_nome:
+                    renomeacoes[coluna] = novo_nome
+
+        with tab_val:
             colunas = st.multiselect(
                 "Colunas com valores nulos",
                 df_temp.columns
@@ -57,28 +86,6 @@ class TratadorUI:
                 colunas_preencher[coluna] = valor
 
 
-        with st.expander(
-                "Remover Colunas", key=f"toggle_{nome}_sv"):
-            colunas_remover = st.multiselect(
-                "Colunas para remover",
-                df_temp.columns
-            )
-
-        with st.expander("Renomear Colunas", key=f"toggle_{nome}_sr"):
-            colunas_renomear = st.multiselect(
-                "Colunas para renomear",
-                df_temp.columns
-            )
-
-            for coluna in colunas_renomear:
-                novo_nome = st.text_input(
-                    f"Novo nome para {coluna}",
-                    key=f"rename_{coluna}"
-                )
-                if novo_nome:
-                    renomeacoes[coluna] = novo_nome
-
-        with st.expander("Substituir Invalidos", key=f"toggle_{nome}_si"):
             colunas_invalidas = st.multiselect(
                 "Colunas com valores inválidos",
                 df_temp.columns
@@ -98,8 +105,6 @@ class TratadorUI:
                         for v in valores.split(",")
                     ]
 
-        with st.expander(
-                "Substituir valores", key=f"toggle_{nome}_ss"):
             colunas_subs = st.multiselect(
                 "Colunas para substituição",
                 df_temp.columns
@@ -123,19 +128,18 @@ class TratadorUI:
                         novo
                     ]
 
-        with st.expander("Converter Numericos", key=f"toggle_{nome}_sn"):
+        with tab_tip:
             colunas_numericas = st.multiselect(
                 "Colunas Numéricas",
                 df_temp.columns
             )
 
-        with st.expander("Converter Datas", key=f"toggle_{nome}_sd"):
+
             colunas_datas = st.multiselect(
                 "Colunas de Data",
                 df_temp.columns
             )
 
-        with st.expander("Limita Valores", key=f"toggle_{nome}_sl"):
             colunas_limite = st.multiselect(
                 "Colunas com limites",
                 df_temp.columns
@@ -171,49 +175,52 @@ class TratadorUI:
             limites=limites
         )
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("Dataframe Original")
-            st.dataframe(df.head())
+        with painel_preview:
+            with st.container(border=True):
 
-        with col2:
-            st.write("Dataframe em Tratamento")
-            st.dataframe(df_temp.head())
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("Dataframe Original")
+                    st.dataframe(df.head())
 
-        if st.button("Aplicar Tratamentos", key=f"btnt_{nome}"):
-            nome_tratado = f"{dataset.nome}_tratado"
-            dataset_tratado = copy.deepcopy(dataset)
-            dataset_tratado.nome = nome_tratado
-            dataset_tratado.df = df_temp
+                with col2:
+                    st.write("Dataframe em Tratamento")
+                    st.dataframe(df_temp.head())
 
-            dataset_tratado.metadata.atualizado_em = datetime.now()
-            dataset_tratado.metadata.linhas = df_temp.shape[0]
-            dataset_tratado.metadata.colunas = df_temp.shape[1]
+            if st.button("Aplicar Tratamentos", key=f"btnt_{nome}"):
+                nome_tratado = f"{dataset.nome}_tratado"
+                dataset_tratado = copy.deepcopy(dataset)
+                dataset_tratado.nome = nome_tratado
+                dataset_tratado.df = df_temp
 
-            tratamentos_executados = {
-                "Padronizar Colunas": padronizar_colunas,
-                "Preencher Colunas": colunas_preencher,
-                "Remover Colunas": colunas_remover,
-                "Renomear Colunas": renomeacoes,
-                "Substituir Invalidos": invalidos,
-                "Substituir valores": substituicoes,
-                "Converter Numericos": colunas_numericas,
-                "Converter Datas": colunas_datas,
-                "Limita Valores": limites,
-            }
+                dataset_tratado.metadata.atualizado_em = datetime.now()
+                dataset_tratado.metadata.linhas = df_temp.shape[0]
+                dataset_tratado.metadata.colunas = df_temp.shape[1]
 
-            for operacao, parametros in tratamentos_executados.items():
-                if parametros:
-                    registro_historico = DatasetHistorico(
-                        modulo="TratadorUI",
-                        operacao=operacao,
-                        parametros=parametros,
-                    )
-                    dataset_tratado.historico.append(registro_historico)
+                tratamentos_executados = {
+                    "Padronizar Colunas": padronizar_colunas,
+                    "Preencher Colunas": colunas_preencher,
+                    "Remover Colunas": colunas_remover,
+                    "Renomear Colunas": renomeacoes,
+                    "Substituir Invalidos": invalidos,
+                    "Substituir valores": substituicoes,
+                    "Converter Numericos": colunas_numericas,
+                    "Converter Datas": colunas_datas,
+                    "Limita Valores": limites,
+                }
 
-            dataset.variacoes.append(nome_tratado)
+                for operacao, parametros in tratamentos_executados.items():
+                    if parametros:
+                        registro_historico = DatasetHistorico(
+                            modulo="TratadorUI",
+                            operacao=operacao,
+                            parametros=parametros,
+                        )
+                        dataset_tratado.historico.append(registro_historico)
 
-            st.session_state["datasets-tratado"][nome_tratado] = dataset_tratado
+                dataset.variacoes.append(nome_tratado)
 
-            st.success(f"Dataset '{nome_tratado}' gerado com sucesso!")
-            st.dataframe(dataset_tratado.df.head())
+                st.session_state["datasets-tratado"][nome_tratado] = dataset_tratado
+
+                st.success(f"Dataset '{nome_tratado}' gerado com sucesso!")
+                st.dataframe(dataset_tratado.df.head())
