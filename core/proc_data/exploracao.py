@@ -31,6 +31,13 @@ class Explorador:
 
     # ----------------------------------------------------------------
     @staticmethod
+    def analisar_duplicatas(df):
+        return (
+            df[df.duplicated()]
+        )
+
+    # ----------------------------------------------------------------
+    @staticmethod
     def resumo_estatistico(df, coluna):
         return {
             "media": df[coluna].mean(),

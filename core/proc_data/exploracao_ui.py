@@ -36,7 +36,7 @@ class ExploradorUI:
             with st.container(border=True):
                 qtd_linhas, ord_linhas = st.columns(2)
                 with qtd_linhas:
-                    quantity = st.number_input(
+                    quantidade = st.number_input(
                         label="Selecione quantidade de linhas",
                         min_value=1,       # Minimum integer boundary
                         max_value=100,     # Maximum integer boundary
@@ -47,7 +47,7 @@ class ExploradorUI:
                 with ord_linhas:
                     ordem = st.toggle("Selecionar ultimas linhas")
                     ordenado = df.tail(
-                        quantity) if ordem else df.head(quantity)
+                        quantidade) if ordem else df.head(quantidade)
                 st.dataframe(ordenado)
 
         with painel_diagnostico:
@@ -71,6 +71,10 @@ class ExploradorUI:
             with col_nulos:
                 st.subheader(f"Numero de Nulos:")
                 st.dataframe(Explorador.analisar_nulos(df))
+
+
+            st.subheader(f"Numero de Duplos:")
+            st.dataframe(Explorador.analisar_duplicatas(df))
 
         with tab_coluna:
             coluna = st.radio(
