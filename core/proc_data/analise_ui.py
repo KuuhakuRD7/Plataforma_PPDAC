@@ -69,8 +69,7 @@ class AnalisadorUI:
             key=f"{nome}_select_ds2",
         )
         obj_dataset2 = repositorio_datasets[opc]
-        df2 = obj_dataset2.df if isinstance(
-            obj_dataset2, Dataset) else obj_dataset2
+        df2 = obj_dataset2.df
         left_keys = st.multiselect(
             "Colunas do DataFrame Atual",
             options=df.columns.tolist(),
@@ -193,7 +192,7 @@ class AnalisadorUI:
         st.dataframe(resultado, width='stretch')
 
         if st.button("Gravar Filtros", key=f"btnaf_{nome}"):
-            novo_obj = self._salvar_dataset_analisado(
+            novo_obj = self._registrar_operacao(
                 dataset_origem=dataset,
                 sufixo_nome="filtrado",
                 novo_df=resultado,
@@ -284,7 +283,7 @@ class AnalisadorUI:
                 "ordenar": ordenar,
             }
 
-            novo_obj = self._salvar_dataset_analisado(
+            novo_obj = self._registrar_operacao(
                 dataset_origem=dataset,
                 sufixo_nome="agregado",
                 novo_df=resultado,
@@ -301,10 +300,9 @@ class AnalisadorUI:
 
         st.subheader(f"Dataset em Analise:{nome} ")
         if dataset is not None:
-
-            with st.expander("Filtros"):
+            filtragem, agregacao = st.columns(2)
+            with filtragem:
                 self.exibir_filtragem(dataset)
-            with st.expander("Agregações"):
+            with agregacao:
                 self.exibir_agregacao(dataset)
-            with st.expander("Junção"):
-                self.exibir_juncao(dataset)
+            self.exibir_juncao(dataset)
