@@ -7,6 +7,7 @@ class TutorUI:
     def __init__(self, caminho=Path("./wiki_data")):
         self.wikis = {}
         self.caminho = caminho
+        self.carregar_wikis()
 
     # ----------------------------------------------------------------
     def exibir_inicio(self):
@@ -99,16 +100,22 @@ class TutorUI:
             self.carregar_markdown(self.caminho / "exportacao.md")
         }
 
+    def exibir_wiki(self,pagina_atual):
+        try:
+            conteudo = self.wikis[pagina_atual]
+        except KeyError:
+            conteudo = "Pagina Não Desenvolvida"
+        st.markdown(conteudo)
+
     # ----------------------------------------------------------------
     def exibir_wikis(self):
-        self.carregar_wikis()
+        if self.wikis:
+            abas = st.tabs(list(self.wikis.keys()))
 
-        abas = st.tabs(list(self.wikis.keys()))
+            for aba, (titulo, conteudo) in zip(
+                abas,
+                self.wikis.items()
+            ):
 
-        for aba, (titulo, conteudo) in zip(
-            abas,
-            self.wikis.items()
-        ):
-
-            with aba:
-                st.markdown(conteudo)
+                with aba:
+                    st.markdown(conteudo)

@@ -451,22 +451,42 @@ class MainApp:
 
         config = paginas[pagina]
 
-        st.title(config["titulo"])
-        st.markdown(config["descricao"])
-        st.divider()
+        col_titulo, col_wiki_btn = st.columns([4, 1])
+        with col_titulo:
+            st.title(config["titulo"] or pagina)
+            if config["descricao"]:
+                st.markdown(config["descricao"])
+
+        with col_wiki_btn:
+            if st.button("Ajuda/Wiki", width='stretch'):
+                self._abrir_overlay_wiki(pagina)
 
         if config["dataset"]:
-            nome_df, dataset = self.escolher_fonte_e_dataset(
-                f"{pagina}_data_select"
-            )
+            with st.container(border=True):
+
+                r_ds, r_info = st.columns([3,1])
+                with r_ds:
+                    nome_df, dataset = self.escolher_fonte_e_dataset(
+                        f"{pagina}_data_select"
+                    )
+                with r_info:
+                    if dataset is not None:
+                        df_ref = dataset.df if hasattr(dataset,"df") else dataset
+                        st.metric("Registros / Variáveis", f"{df_ref.shape[0]} x {df_ref.shape[1]}")
 
             if dataset is not None:
-                # df = (
-                #     dataset.df
-                #     if hasattr(dataset, "df")
-                #     else dataset
-                # )
-                config["funcao"](nome_df, dataset)
+                painel_trabalho, painel_ppdac = st.columns([2.6, 1])
+
+                with painel_trabalho:
+                    config["funcao"](nome_df, dataset)
+
+                with painel_ppdac:
+                    with st.container(border=True):
+                        st.markdown(
+                            '<h4><i class="fa fa-pencil-square-o icon-lab"></i> Diário de Bordo</h4>',
+                            unsafe_allow_html=True
+                        )
+
             else:
                 st.info(
                     "Primeiro, cria ou importa um conjunto de dados "
@@ -476,6 +496,12 @@ class MainApp:
             config["funcao"]()
 
     # ----------------------------------------------------------------
+
+    @st.dialog("Guia Rápido PPDAC")
+    def _abrir_overlay_wiki(self,pagina_atual):
+        st.markdown(f"### Orientação para: **{pagina_atual}**")
+        self.Tutor.exibir_wiki(pagina_atual)
+
     def listar_datasets(self):
 
         opcoes = {}
